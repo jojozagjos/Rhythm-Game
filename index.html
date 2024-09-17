@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Game</title>
+    <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="note-container"></div>
+        <div id="hit-line"></div>
+        <div id="key-indicators">
+            <div class="key" data-key="65">A</div>
+            <div class="key" data-key="83">S</div>
+            <div class="key" data-key="68">D</div>
+            <div class="key" data-key="70">F</div>
+        </div>
+        <div id="controls">
+            <input type="file" id="song-input">
+            <select id="song-select">
+                <option value="">Select a song</option>
+                <!-- Add song options here -->
+            </select>
+            <button id="start-button">Start Game</button>
+            <button id="change-keybinds-button">Change Keybinds</button>
+            <button id="settings-button">Settings</button>
+            <button id="stop-button" style="display: none;">Stop/Pause</button>
+        </div>
+        <form id="keybinds-form" style="display: none;">
+            <label for="key1">Key 1:</label>
+            <input type="text" id="key1" maxlength="1">
+            <label for="key2">Key 2:</label>
+            <input type="text" id="key2" maxlength="1">
+            <label for="key3">Key 3:</label>
+            <input type="text" id="key3" maxlength="1">
+            <label for="key4">Key 4:</label>
+            <input type="text" id="key4" maxlength="1">
+            <button type="button" id="save-keybinds-button">Save Keybinds</button>
+        </form>
+        <form id="settings-form" style="display: none;">
+            <label for="note-color1">Note Color 1:</label>
+            <input type="color" class="note-color-input" id="note-color1" value="#ff0000">
+            <label for="note-color2">Note Color 2:</label>
+            <input type="color" class="note-color-input" id="note-color2" value="#00ff00">
+            <label for="note-color3">Note Color 3:</label>
+            <input type="color" class="note-color-input" id="note-color3" value="#0000ff">
+            <label for="note-color4">Note Color 4:</label>
+            <input type="color" class="note-color-input" id="note-color4" value="#ffff00">
+            <button type="button" id="save-settings-button">Save Settings</button>
+        </form>
+    </div>
+    <script src="Script/script.js"></script>
+</body>
+</html>
