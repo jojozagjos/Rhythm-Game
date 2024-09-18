@@ -129,16 +129,20 @@ function displayKeybinds() {
         keyIndicator.dataset.key = keybinds[index].charCodeAt(0);
     });
 }
-
 function generateNotes() {
     clearNotes(); // Clear existing notes
     const songDuration = audioBuffer.duration;
     const bpm = 120; // Assume a default BPM, you can adjust this or calculate it dynamically
-    const beatInterval = 60 / bpm; // Interval between beats in seconds
+    const beatInterval = 50 // Interval between beats in seconds
+
+    // console.log(`Song Duration: ${songDuration}, BPM: ${bpm}, Beat Interval: ${beatInterval}`); // Debugging
+
     for (let time = 0; time < songDuration; time += beatInterval) {
         const key = keybinds[Math.floor(Math.random() * keybinds.length)];
         notes.push({ time, key, hit: false });
+        // console.log(`Note created: time=${time}, key=${key}`); // Debugging
     }
+
     notes.forEach(note => {
         const noteElement = document.createElement('div');
         noteElement.classList.add('note');
@@ -147,8 +151,10 @@ function generateNotes() {
         noteElement.style.top = '0px'; // Start from the top
         noteElement.style.left = getLeftPositionForKey(note.key); // Align with corresponding key
         document.getElementById('notes-container').appendChild(noteElement);
+        // console.log(`Note element created for key=${note.key}`); // Debugging
     });
 }
+
 
 function getColorForKey(key) {
     switch (key) {
@@ -174,12 +180,25 @@ function updateGame() {
     if (isPaused) return;
     // Update game logic and render notes
     const currentTime = audioContext.currentTime - startTime;
+    const containerHeight = document.getElementById('notes-container').offsetHeight;
+    const songDuration = audioBuffer.duration;
+
+    // Debugging logs to check values
+    // console.log(`Current Time: ${currentTime}`);
+    // console.log(`Song Duration: ${songDuration}`);
+    // console.log(`Container Height: ${containerHeight}`);
+
     notes.forEach(note => {
         const noteElement = document.querySelector(`.note[data-key="${note.key}"]`);
         if (noteElement) {
-            const notePosition = (note.time - currentTime) * 300; // Increase speed by adjusting this value
+            // Calculate the position based on the current time and the total duration of the song
+            let notePosition = (currentTime + note.time) / songDuration * containerHeight;
+            // if (isNaN(notePosition) || notePosition < 0) {
+            //     notePosition = 0; // Ensure position is not negative or NaN
+            // }
             noteElement.style.top = `${notePosition}px`;
-            if (notePosition > 500 && !note.hit) { // Adjusted to match the new height
+            console.log(`Note key: ${note.key}, Position: ${notePosition}, Note Time: ${note.time}`); // Debugging
+            if (notePosition > containerHeight && !note.hit) { // Adjusted to match the container height
                 note.hit = true;
                 combo = 0;
                 showFeedback('Miss');
@@ -189,6 +208,9 @@ function updateGame() {
     });
     animationId = requestAnimationFrame(updateGame);
 }
+
+
+
 
 function clearNotes() {
     const notesContainer = document.getElementById('notes-container');
