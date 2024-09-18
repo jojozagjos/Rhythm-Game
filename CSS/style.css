@@ -1,123 +1,115 @@
-/* CSS/style.css */
 body {
+    font-family: Arial, sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
-    background-color: #282c34;
-    color: white;
-    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
 }
 
 #game-container {
-    text-align: center;
-}
-
-#note-container {
-    width: 400px;
-    height: 300px;
-    border: 1px solid white;
-    margin-bottom: 20px;
     position: relative;
+    width: 80%;
+    height: 500px; /* Increased height */
+    border: 2px solid #fff;
     overflow: hidden;
 }
 
-#hit-line {
+#line {
     position: absolute;
-    bottom: 50px;
-    width: 100%;
-    height: 4px;
-    background-color: yellow;
-    box-shadow: 0 0 10px yellow;
-    transition: background-color 0.1s, box-shadow 0.1s;
+    top: 90%; /* Adjusted to match the new height */
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #fff;
 }
 
-#hit-line.flash {
-    background-color: orange;
-    box-shadow: 0 0 20px orange;
+#notes-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .note {
-    width: 50px;
-    height: 50px;
     position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #00ff00;
 }
 
-.note.hit {
-    background-color: yellow;
-    animation: hit-animation 0.3s;
+#feedback {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
 }
 
-@keyframes hit-animation {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+#score-display, #combo-display {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 18px;
 }
 
-@keyframes screen-shake {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(5px, 5px); }
-    50% { transform: translate(-5px, -5px); }
-    75% { transform: translate(5px, -5px); }
+#combo-display {
+    top: 40px;
 }
 
-.screen-shake {
-    animation: screen-shake 0.3s;
-}
-
-#controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
+#controls, #settings {
+    margin-top: 20px;
 }
 
 button {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
+    margin: 5px;
+    padding: 10px;
     font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: background-color 0.3s, transform 0.3s;
-}
-
-button:hover {
-    background-color: #45a049;
-    transform: scale(1.05);
 }
 
 #key-indicators {
     display: flex;
-    justify-content: space-around;
-    margin-top: 20px;
-    width: 400px;
-    position: relative;
-    top: -50px;
+    justify-content: center;
+    margin-top: 10px;
 }
 
 .key {
     width: 50px;
     height: 50px;
+    margin: 0 5px;
     display: flex;
-    justify-content: center;
     align-items: center;
-    border: 1px solid white;
+    justify-content: center;
+    background-color: #333;
+    border: 2px solid #fff;
     border-radius: 5px;
-    background-color: #444;
-    transition: background-color 0.3s;
+    font-size: 24px;
+    transition: transform 0.1s;
 }
 
 .key.active {
-    background-color: #888;
+    transform: scale(0.9);
 }
 
-#keybinds-form, #settings-form {
-    margin-top: 20px;
+.shake {
+    animation: shake 0.5s;
+    animation-timing-function: ease-in-out;
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+    60% { transform: translate(-3px, 1px) rotate(0deg); }
+    70% { transform: translate(3px, 1px) rotate(-1deg); }
+    80% { transform: translate(-1px, -1px) rotate(1deg); }
+    90% { transform: translate(1px, 2px) rotate(0deg); }
+    100% { transform: translate(1px, -2px) rotate(-1deg); }
 }

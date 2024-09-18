@@ -1,193 +1,209 @@
-// Script/script.js
-const noteContainer = document.getElementById('note-container');
-const songInput = document.getElementById('song-input');
-const songSelect = document.getElementById('song-select');
-const startButton = document.getElementById('start-button');
-const changeKeybindsButton = document.getElementById('change-keybinds-button');
-const saveKeybindsButton = document.getElementById('save-keybinds-button');
-const settingsButton = document.getElementById('settings-button');
-const saveSettingsButton = document.getElementById('save-settings-button');
-const stopButton = document.getElementById('stop-button');
-const keyIndicators = document.querySelectorAll('.key');
-const keybindsForm = document.getElementById('keybinds-form');
-const settingsForm = document.getElementById('settings-form');
-const noteColorInputs = document.querySelectorAll('.note-color-input');
-const hitLine = document.getElementById('hit-line');
-let audioContext, audioBuffer, sourceNode, animationFrameId, analyser, dataArray, bufferLength;
-let keys = [65, 83, 68, 70]; // Default keys: A, S, D, F
-let noteColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00']; // Default colors: red, green, blue, yellow
+let audioContext, audioBuffer, sourceNode, analyser, dataArray, animationId;
+let notes = [];
+let keybinds = ['D', 'F', 'J', 'K'];
+let score = 0;
+let combo = 0;
+let isPaused = false;
+let startTime;
 
-startButton.addEventListener('click', () => {
-    if (songInput.files.length > 0) {
-        const file = songInput.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const arrayBuffer = e.target.result;
-            loadSong(arrayBuffer);
-        };
-        reader.readAsArrayBuffer(file);
-    } else if (songSelect.value) {
-        fetch(songSelect.value)
-            .then(response => response.arrayBuffer())
-            .then(arrayBuffer => loadSong(arrayBuffer))
-            .catch(error => console.error('Error loading song:', error));
-    } else {
-        alert('Please select a song first!');
+document.getElementById('start-button').addEventListener('click', startGame);
+document.getElementById('stop-button').addEventListener('click', stopGame);
+document.getElementById('pause-button').addEventListener('click', pauseGame);
+document.getElementById('settings-button').addEventListener('click', toggleSettings);
+document.getElementById('file-input').addEventListener('change', loadFile);
+document.getElementById('save-keybinds-button').addEventListener('click', saveKeybinds);
+document.addEventListener('keydown', handleKeyPress);
+document.addEventListener('keyup', handleKeyRelease);
+
+function startGame() {
+    if (!audioBuffer) {
+        alert('Please load a song first!');
+        return;
     }
-    toggleControls(false);
-});
-
-stopButton.addEventListener('click', () => {
-    if (sourceNode) {
-        sourceNode.stop();
-        cancelAnimationFrame(animationFrameId);
-        toggleControls(true);
-    }
-});
-
-changeKeybindsButton.addEventListener('click', () => {
-    keybindsForm.style.display = 'block';
-});
-
-saveKeybindsButton.addEventListener('click', () => {
-    const key1 = document.getElementById('key1').value.toUpperCase().charCodeAt(0);
-    const key2 = document.getElementById('key2').value.toUpperCase().charCodeAt(0);
-    const key3 = document.getElementById('key3').value.toUpperCase().charCodeAt(0);
-    const key4 = document.getElementById('key4').value.toUpperCase().charCodeAt(0);
-    keys = [key1, key2, key3, key4];
-    updateKeyIndicators();
-    keybindsForm.style.display = 'none';
-});
-
-settingsButton.addEventListener('click', () => {
-    settingsForm.style.display = 'block';
-});
-
-saveSettingsButton.addEventListener('click', () => {
-    noteColors = Array.from(noteColorInputs).map(input => input.value);
-    settingsForm.style.display = 'none';
-});
-
-function updateKeyIndicators() {
-    keyIndicators.forEach((indicator, index) => {
-        indicator.dataset.key = keys[index];
-        indicator.textContent = String.fromCharCode(keys[index]);
-        indicator.style.backgroundColor = noteColors[index];
-    });
-}
-
-function loadSong(arrayBuffer) {
+    document.getElementById('start-button').style.display = 'none';
+    document.getElementById('stop-button').style.display = 'inline';
+    document.getElementById('pause-button').style.display = 'inline';
+    document.getElementById('settings').style.display = 'none';
+    document.getElementById('file-input').style.display = 'none';
+    displayKeybinds();
+    // Initialize audio context and start playing
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    audioContext.decodeAudioData(arrayBuffer, (buffer) => {
-        audioBuffer = buffer;
-        setupAudioNodes();
-        playSong();
-    });
-}
-
-function setupAudioNodes() {
     sourceNode = audioContext.createBufferSource();
-    sourceNode.buffer = audioBuffer;
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    bufferLength = analyser.frequencyBinCount;
-    dataArray = new Uint8Array(bufferLength);
     sourceNode.connect(analyser);
     analyser.connect(audioContext.destination);
+    sourceNode.buffer = audioBuffer;
+    startTime = audioContext.currentTime;
+    sourceNode.start(0);
+    // Start animation loop
+    animationId = requestAnimationFrame(updateGame);
+    generateNotes();
 }
 
-function playSong() {
-    sourceNode.start(0);
-    generateNotes();
-    stopButton.style.display = 'block';
+function stopGame() {
+    document.getElementById('start-button').style.display = 'inline';
+    document.getElementById('stop-button').style.display = 'none';
+    document.getElementById('pause-button').style.display = 'none';
+    document.getElementById('file-input').style.display = 'inline';
+    cancelAnimationFrame(animationId);
+    sourceNode.stop();
+    clearNotes(); // Clear notes when the game stops
+}
+
+function pauseGame() {
+    if (audioContext.state === 'running') {
+        audioContext.suspend();
+        isPaused = true;
+    } else {
+        audioContext.resume();
+        isPaused = false;
+        animationId = requestAnimationFrame(updateGame);
+    }
+}
+
+function toggleSettings() {
+    const settings = document.getElementById('settings');
+    settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
+}
+
+function loadFile(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContext.decodeAudioData(e.target.result, function(buffer) {
+            audioBuffer = buffer;
+        });
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function saveKeybinds() {
+    keybinds = [
+        document.getElementById('key1').value.toUpperCase(),
+        document.getElementById('key2').value.toUpperCase(),
+        document.getElementById('key3').value.toUpperCase(),
+        document.getElementById('key4').value.toUpperCase()
+    ];
+    displayKeybinds();
+    generateNotes(); // Regenerate notes with new keybinds
+}
+
+function handleKeyPress(event) {
+    const key = event.key.toUpperCase();
+    if (keybinds.includes(key)) {
+        document.querySelector(`.key[data-key="${event.keyCode}"]`).classList.add('active');
+        // Handle note hit or miss
+        const note = notes.find(n => n.key === key && !n.hit);
+        if (note) {
+            note.hit = true;
+            score += 100;
+            combo++;
+            updateScoreAndCombo();
+            showFeedback('Perfect');
+        } else {
+            combo = 0;
+            showFeedback('Miss');
+            screenShake();
+        }
+    }
+}
+
+function handleKeyRelease(event) {
+    const key = event.key.toUpperCase();
+    if (keybinds.includes(key)) {
+        document.querySelector(`.key[data-key="${event.keyCode}"]`).classList.remove('active');
+    }
+}
+
+function showFeedback(message) {
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = message;
+    setTimeout(() => feedback.textContent = '', 1000);
+}
+
+function displayKeybinds() {
+    const keyIndicators = document.querySelectorAll('.key');
+    keyIndicators.forEach((keyIndicator, index) => {
+        keyIndicator.textContent = keybinds[index];
+        keyIndicator.dataset.key = keybinds[index].charCodeAt(0);
+    });
 }
 
 function generateNotes() {
-    let currentTime = 0;
-    const interval = 500; // Interval in milliseconds for note generation
-
-    function createNote() {
-        const note = document.createElement('div');
-        note.classList.add('note');
-        const keyIndex = Math.floor(Math.random() * keys.length);
-        note.dataset.key = keys[keyIndex];
-        note.style.top = `${-50}px`;
-        note.style.left = `${(keyIndex * 100)}px`; // Adjusted to match the key indicators
-        note.style.backgroundColor = noteColors[keyIndex];
-        noteContainer.appendChild(note);
+    clearNotes(); // Clear existing notes
+    const songDuration = audioBuffer.duration;
+    const bpm = 120; // Assume a default BPM, you can adjust this or calculate it dynamically
+    const beatInterval = 60 / bpm; // Interval between beats in seconds
+    for (let time = 0; time < songDuration; time += beatInterval) {
+        const key = keybinds[Math.floor(Math.random() * keybinds.length)];
+        notes.push({ time, key, hit: false });
     }
-
-    function scheduleNotes() {
-        if (currentTime < audioBuffer.duration * 1000) {
-            createNote();
-            currentTime += interval;
-            setTimeout(scheduleNotes, interval);
-        }
-    }
-
-    scheduleNotes();
-    animateNotes();
-}
-
-function animateNotes() {
-    const notes = document.querySelectorAll('.note');
     notes.forEach(note => {
-        const top = parseFloat(note.style.top);
-        note.style.top = `${top + 2}px`;
-        if (top > 300) {
-            note.remove();
-            document.body.classList.add('screen-shake');
-            setTimeout(() => {
-                document.body.classList.remove('screen-shake');
-            }, 300);
-        } else if (top > 250 && top < 300) {
-            hitLine.classList.add('flash');
-            setTimeout(() => {
-                hitLine.classList.remove('flash');
-            }, 100);
-        }
-    });
-    animationFrameId = requestAnimationFrame(animateNotes);
-}
-
-document.addEventListener('keydown', (e) => {
-    const key = e.keyCode;
-    const keyIndicator = document.querySelector(`.key[data-key="${key}"]`);
-    if (keyIndicator) {
-        keyIndicator.classList.add('active');
-        checkHit(key);
-    }
-});
-
-document.addEventListener('keyup', (e) => {
-    const key = e.keyCode;
-    const keyIndicator = document.querySelector(`.key[data-key="${key}"]`);
-    if (keyIndicator) {
-        keyIndicator.classList.remove('active');
-    }
-});
-
-function checkHit(key) {
-    const notes = document.querySelectorAll(`.note[data-key="${key}"]`);
-    notes.forEach(note => {
-        const top = parseFloat(note.style.top);
-        if (top > 250 && top < 300) {
-            note.classList.add('hit');
-            setTimeout(() => note.remove(), 300);
-            // Add scoring logic here
-        }
+        const noteElement = document.createElement('div');
+        noteElement.classList.add('note');
+        noteElement.dataset.key = note.key;
+        noteElement.style.backgroundColor = getColorForKey(note.key); // Set color based on key
+        noteElement.style.top = '0px'; // Start from the top
+        noteElement.style.left = getLeftPositionForKey(note.key); // Align with corresponding key
+        document.getElementById('notes-container').appendChild(noteElement);
     });
 }
 
-function toggleControls(show) {
-    const display = show ? 'block' : 'none';
-    startButton.style.display = display;
-    changeKeybindsButton.style.display = display;
-    settingsButton.style.display = display;
-    songInput.style.display = display;
-    songSelect.style.display = display;
-    stopButton.style.display = show ? 'none' : 'block';
+function getColorForKey(key) {
+    switch (key) {
+        case 'D': return '#ff0000'; // Red
+        case 'F': return '#00ff00'; // Green
+        case 'J': return '#0000ff'; // Blue
+        case 'K': return '#ffff00'; // Yellow
+        default: return '#ffffff'; // White
+    }
 }
 
-// Initialize the key indicators with the default colors
-updateKeyIndicators();
+function getLeftPositionForKey(key) {
+    switch (key) {
+        case 'D': return '25%'; // Adjust these values to align with your key positions
+        case 'F': return '40%';
+        case 'J': return '60%';
+        case 'K': return '75%';
+        default: return '50%';
+    }
+}
+
+function updateGame() {
+    if (isPaused) return;
+    // Update game logic and render notes
+    const currentTime = audioContext.currentTime - startTime;
+    notes.forEach(note => {
+        const noteElement = document.querySelector(`.note[data-key="${note.key}"]`);
+        if (noteElement) {
+            const notePosition = (note.time - currentTime) * 300; // Increase speed by adjusting this value
+            noteElement.style.top = `${notePosition}px`;
+            if (notePosition > 500 && !note.hit) { // Adjusted to match the new height
+                note.hit = true;
+                combo = 0;
+                showFeedback('Miss');
+                screenShake();
+            }
+        }
+    });
+    animationId = requestAnimationFrame(updateGame);
+}
+
+function clearNotes() {
+    const notesContainer = document.getElementById('notes-container');
+    while (notesContainer.firstChild) {
+        notesContainer.removeChild(notesContainer.firstChild);
+    }
+}
+
+function updateScoreAndCombo() {
+    document.getElementById('score-display').textContent = `Score: ${score}`;
+    document.getElementById('combo-display').textContent = `Combo: ${combo}`;
+}
+
+function screenShake() {
+    const gameContainer = document.getElementById('game-container');
+    gameContainer.classList.add('shake');
+    setTimeout(() => gameContainer.classList.remove('shake'), 500);
+}
